@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Sắc kí cột - Bản Hoàn Thiện</title>
+    <style>
+        :root {
+            --bg: #fde1d3;
+            --glass: #576574;
+            --mix: #a32a8e; 
+            --blue: #3f51b5; 
+            --red: #e91e63;  
+            --solvent: rgba(255, 255, 255, 0.6);
+            --flask-w: 70px;
+            --step: 150px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- VÙNG TIÊU ĐỀ (ĐẢM BẢO KHÔNG BỊ CHE) --- */
+        .title-container {
+            width: 100%;
+            text-align: center;
+            padding: 25px 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            z-index: 100;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        /* --- VÙNG THÍ NGHIỆM --- */
+        .lab-setup {
+            position: relative;
+            width: 1000px;
+            height: 580px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Nhãn chú thích (Đẩy xa sang 2 bên lề) */
+        .label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 15px;
+            color: #2c3e50;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .instruction-blue {
+            position: absolute;
+            right: 120px;
+            top: 150px;
+            color: #0984e3;
+            font-style: italic;
+            width: 180px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* --- CỘT SẮC KÍ (NẰM DƯỚI TIÊU ĐỀ) --- */
+        .column-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 50;
+            position: relative;
+        }
+
+        .column {
+            position: relative;
+            width: 45px;
+            height: 360px;
+            border: 3px solid var(--glass);
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .column-top {
+            position: absolute;
+            top: 0px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 49px; 
+            height: 20px;
+            border: 3px solid var(--glass);
+            background: #fff;
+            border-radius: 5px 5px 0 0;
+            z-index: 60;
+        }
+
+        /* Dải màu di chuyển và co giãn */
+        .band {
+            position: absolute;
+            width: 100%;
+            height: 30px; 
+            left: 0;
+            top: 40px;
+            transition: top 4s linear, height 3s linear, opacity 0.3s;
+        }
+        #mix-band { background: var(--mix); z-index: 25; }
+        #blue-band { background: var(--blue); opacity: 0; z-index: 24; }
+        #red-band { background: var(--red); opacity: 0; z-index: 23; }
+
+        .tap-system {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: -3px;
+        }
+        .tap-pipe { width: 10px; height: 35px; background: var(--glass); }
+        .tap-valve { width: 45px; height: 14px; background: #c0392b; border-radius: 7px; margin-top: -22px; z-index: 55; }
+
+        /* Tia dung dịch chảy xuống */
+        #drip-stream {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100px;
+            top: 410px;
+            opacity: 0;
+            z-index: 5;
+            transition: opacity 0.3s;
+        }
+
+        /* --- HỆ THỐNG BÌNH TRƯỢT --- */
+        .flask-system {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #flask-tray {
+            display: flex;
+            gap: 80px; 
+            position: absolute;
+            left: 50%;
+            transform: translateX(-35px); 
+            transition: transform 1.2s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+        }
+
+        .flask {
+            width: var(--flask-w);
+            height: 90px;
+            background: rgba(255,255,255,0.4);
+            border: 2.5px solid var(--glass);
+            clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+            position: relative;
+        }
+
+        .fill {
+            position: absolute;
+            bottom: 0; width: 100%; height: 0%;
+            transition: height 4s linear;
+        }
+
+        /* Bảng điều khiển */
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+            z-index: 150;
+        }
+
+        button {
+            padding: 14px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #2c3e50;
+            color: white;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        button:hover { background: #34495e; transform: translateY(-2px); }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        #status {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title-container">
+        <h2>Mô phỏng: Quá trình tách chất bằng Sắc kí cột</h2>
+    </div>
+
+    <div class="lab-setup">
+        <!-- Chú thích 2 bên xa để không chạm cột -->
+        <div class="label" style="left: 200px; top: 35px;">Dung môi</div>
+        <div id="l-mix" class="label" style="left: 140px; top: 75px; color: var(--mix);">Hỗn hợp hai chất (Tím)</div>
+        <div class="label" style="left: 180px; top: 220px;">Cột sắc kí</div>
+        
+        <div class="instruction-blue">
+            Cho dung môi chảy qua cột sắc kí để tách riêng các chất ↓
+        </div>
+
+        <!-- Cột sắc kí nằm giữa -->
+        <div class="column-area">
+            <div class="column-top"></div>
+            <div class="column">
+                <div id="mix-band" class="band"></div>
+                <div id="blue-band" class="band"></div>
+                <div id="red-band" class="band"></div>
+            </div>
+            <div class="tap-system">
+                <div class="tap-pipe"></div>
+                <div class="tap-valve"></div>
+            </div>
+        </div>
+
+        <!-- Tia nước -->
+        <div id="drip-stream"></div>
+
+        <!-- Khay bình hứng -->
+        <div class="flask-system">
+            <div id="flask-tray">
+                <div class="flask"><div class="fill" style="background: var(--solvent); height: 25%;"></div></div>
+                <div class="flask"><div id="fill-blue" class="fill" style="background: var(--blue);"></div></div>
+                <div class="flask"><div id="fill-red" class="fill" style="background: var(--red);"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" onclick="runSimulation()">Bắt đầu thí nghiệm</button>
+        <button onclick="location.reload()">Làm mới</button>
+    </div>
+
+    <div id="status">Sẵn sàng</div>
+
+<script>
+    function runSimulation() {
+        const btn = document.getElementById('startBtn');
+        const mix = document.getElementById('mix-band');
+        const blue = document.getElementById('blue-band');
+        const red = document.getElementById('red-band');
+        const tray = document.getElementById('flask-tray');
+        const drip = document.getElementById('drip-stream');
+        const fillBlue = document.getElementById('fill-blue');
+        const fillRed = document.getElementById('fill-red');
+        const status = document.getElementById('status');
+
+        btn.disabled = true;
+
+        // 1. Khởi động: Tím biến mất, Xanh chạy nhanh, Đỏ chạy chậm
+        status.innerText = "Trạng thái: Đang tách chất...";
+        
+        setTimeout(() => {
+            mix.style.opacity = "0";
+            document.getElementById('l-mix').style.opacity = "0.3";
+            
+            blue.style.opacity = "1";
+            red.style.opacity = "1";
+
+            // Di chuyển đồng thời: Xanh (4s), Đỏ (10s)
+            blue.style.top = "330px"; 
+            red.style.transition = "top 10s linear";
+            red.style.top = "330px";
+
+            // Bước trượt 1: Đưa bình 2 vào tâm hứng Xanh
+            setTimeout(() => {
+                tray.style.transform = "translateX(-185px)";
+            }, 500);
+
+        }, 1000);
+
+        // 2. Thu chất Xanh (Giây thứ 5)
+        setTimeout(() => {
+            status.innerText = "Trạng thái: Đang thu chất XANH vào bình 2...";
+            drip.style.opacity = "1";
+            drip.style.backgroundColor = "var(--blue)";
+            
+            // Chất trong cột giảm dần
+            blue.style.height = "0px";
+            blue.style.top = "360px";
+            
+            fillBlue.style.height = "75%";
+        }, 5000);
+
+        // 3. Xanh xong, chuyển bình 3 đón Đỏ
+        setTimeout(() => {
+            status.innerText = "Trạng thái: Chờ chất ĐỎ di chuyển xuống...";
+            drip.style.opacity = "0";
+            
+            tray.style.transform = "translateX(-335px)";
+        }, 8500);
+
+        // 4. Thu chất Đỏ (Giây thứ 11)
+        setTimeout(() => {
+            status.innerText = "Trạng thái: Đang thu chất ĐỎ vào bình 3...";
+            drip.style.opacity = "1";
+            drip.style.backgroundColor = "var(--red)";
+            
+            // Chất trong cột giảm dần
+            red.style.transition = "top 3s linear, height 3s linear";
+            red.style.height = "0px";
+            red.style.top = "360px";
+            
+            fillRed.style.height = "75%";
+        }, 11000);
+
+        // 5. Kết thúc
+        setTimeout(() => {
+            drip.style.opacity = "0";
+            status.innerHTML = "<span style='color: #10ac84;'>Hoàn tất: Tách thành công hai chất!</span>";
+        }, 15000);
+    }
+</script>
+</body>
+</html>
